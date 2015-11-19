@@ -131,6 +131,8 @@ WIN_GL_LoadLibrary(_THIS, const char *path)
         return SDL_SetError("Could not retrieve OpenGL functions");
     }
 
+	WIN_GL_InitExtensions(_this);
+
     return 0;
 }
 

@@ -276,13 +276,6 @@ WIN_CreateWindow(_THIS, SDL_Window * window)
         return -1;
     }
 
-#if SDL_VIDEO_OPENGL_WGL
-    /* We need to initialize the extensions before deciding how to create ES profiles */
-    if (window->flags & SDL_WINDOW_OPENGL) {
-        WIN_GL_InitExtensions(_this);
-    }
-#endif
-
 #if SDL_VIDEO_OPENGL_ES2
     if ((window->flags & SDL_WINDOW_OPENGL) &&
         _this->gl_config.profile_mask == SDL_GL_CONTEXT_PROFILE_ES
