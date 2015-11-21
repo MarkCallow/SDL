@@ -26,6 +26,7 @@
 #include "SDL_loadso.h"
 #include "SDL_windowsvideo.h"
 #include "SDL_windowsopengles.h"
+#include "SDL_hints.h"
 
 /* WGL implementation of SDL OpenGL support */
 
@@ -131,7 +132,18 @@ WIN_GL_LoadLibrary(_THIS, const char *path)
         return SDL_SetError("Could not retrieve OpenGL functions");
     }
 
+	// XXX Too sleazy? The inc/dec is so that WIN_GL_InitExtensions
+	// can use SDL_GL_ExtensionSupported and SDL_GL_GetProcAddress
+	// which will fail if driver_loaded == 0. driver_loaded is
+	// incremented by SDL_GL_LoadLibrary immediately after this
+	// function returns.
+	//
+	// The alternative is to duplicate SDL_GL_ExtensionSupported
+	// and SDL_GL_DeduceMaxSupportedESProfile here and in the X11
+	// driver.
+	++_this->gl_config.driver_loaded;
 	WIN_GL_InitExtensions(_this);
+	--_this->gl_config.driver_loaded;
 
     return 0;
 }
@@ -409,10 +421,15 @@ WIN_GL_InitExtensions(_THIS)
     }
 
     /* Check for WGL_EXT_create_context_es2_profile */
-    _this->gl_data->HAS_WGL_EXT_create_context_es2_profile = SDL_FALSE;
     if (HasExtension("WGL_EXT_create_context_es2_profile", extensions)) {
-        _this->gl_data->HAS_WGL_EXT_create_context_es2_profile = SDL_TRUE;
-    }
+		SDL_GL_DeduceMaxSupportedESProfile(
+	        &_this->gl_data->es_profile_max_supported_version.major,
+	        &_this->gl_data->es_profile_max_supported_version.minor
+		);
+	} else {
+		_this->gl_data->es_profile_max_supported_version.major = 0;
+		_this->gl_data->es_profile_max_supported_version.minor = 0;
+	}
 
     /* Check for GLX_ARB_context_flush_control */
     if (HasExtension("WGL_ARB_context_flush_control", extensions)) {
@@ -595,14 +612,25 @@ WIN_GL_SetupWindow(_THIS, SDL_Window * window)
     return retval;
 }
 
+SDL_bool
+WIN_GL_UseEGL(_THIS)
+{
+	const char* eglHint = SDL_GetHint(SDL_HINT_OPENGL_ES_DRIVER);
+	SDL_assert(_this->gl_data != NULL);
+
+    return ((eglHint != '\0' && !SDL_strncmp(eglHint, "1", 2))
+		    || _this->gl_config.major_version > _this->gl_data->es_profile_max_supported_version.major
+		    || (_this->gl_config.major_version == _this->gl_data->es_profile_max_supported_version.major
+		        && _this->gl_config.minor_version > _this->gl_data->es_profile_max_supported_version.minor));
+}
+
 SDL_GLContext
 WIN_GL_CreateContext(_THIS, SDL_Window * window)
 {
     HDC hdc = ((SDL_WindowData *) window->driverdata)->hdc;
     HGLRC context, share_context;
 
-    if (_this->gl_config.profile_mask == SDL_GL_CONTEXT_PROFILE_ES &&
-        !_this->gl_data->HAS_WGL_EXT_create_context_es2_profile) {
+    if (_this->gl_config.profile_mask == SDL_GL_CONTEXT_PROFILE_ES && WIN_GL_UseEGL(_this)) {
 #if SDL_VIDEO_OPENGL_EGL        
         /* Switch to EGL based functions */
         WIN_GL_UnloadLibrary(_this);

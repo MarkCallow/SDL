@@ -617,6 +617,37 @@ extern "C" {
 #define SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4	"SDL_WINDOWS_NO_CLOSE_ON_ALT_F4"
 
 /**
+ *  \brief  A variable controlling what driver to use for OpenGL ES contexts.
+ *
+ *  On some platforms, currently Windows and X11, the OpenGL driver supports
+ *  OpenGL ES context profiles. By default SDL uses these profiles, when
+ *  available and attempts to load an OpenGL ES library when not.
+ *  This variable controls whether SDL follows the default behaviour or
+ *  simple loads an OpenGL ES library.
+ *
+ *  Circumstances where this is useful include
+ *  - Testing an app with a particular OpenGL ES emulator
+ *  - Running applications where the OpenGL ES function addresses were
+ *    resolved at link time by linking with an OpenGL ES library or emulator.
+ *
+ *  Caution: for an application to work with the default behaviour across
+ *  different OpenGL drivers it \i must query the OpenGL ES function
+ *  addresses at run time using SDL_GL_GetProcAddress.
+ *
+ *  This variable is ignored on most platforms because OpenGL ES is native
+ *  or completely unsupported.
+ *
+ *  This variable can be set to the following values:
+ *    "0"       - Use ES profile of OpenGL, if available. (Default when not set.)
+ *    "1"       - Load OpenGL ES library using the default library names.
+ *    "X;Y"     - Load EGL library "X" and OpenGL ES library "Y".
+ *
+ *  By default SDL tries to make a best guess for each platform whether
+ *  to use acceleration or not.
+ */
+#define SDL_HINT_OPENGL_ES_DRIVER   "SDL_OPENGL_ES_DRIVER"
+
+/**
  *  \brief  An enumeration of hint priorities
  */
 typedef enum
