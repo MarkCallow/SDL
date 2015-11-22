@@ -132,15 +132,40 @@ WIN_GL_LoadLibrary(_THIS, const char *path)
         return SDL_SetError("Could not retrieve OpenGL functions");
     }
 
-	// XXX Too sleazy? The inc/dec is so that WIN_GL_InitExtensions
-	// can use SDL_GL_ExtensionSupported and SDL_GL_GetProcAddress
-	// which will fail if driver_loaded == 0. driver_loaded is
-	// incremented by SDL_GL_LoadLibrary immediately after this
-	// function returns.
-	//
-	// The alternative is to duplicate SDL_GL_ExtensionSupported
-	// and SDL_GL_DeduceMaxSupportedESProfile here and in the X11
-	// driver.
+	/* XXX Too sleazy? WIN_GL_InitExtensions looks for certain OpenGL
+	   extensions via SDL_GL_DeduceMaxSupportedESProfile. This uses
+	   SDL_GL_ExtensionSupported which in turn calls SDL_GL_GetProcAddress.
+	   However SDL_GL_GetProcAddress will fail if the library is not
+	   loaded; it checks if gl_config.driver_loaded > 0. To avoid this
+	   test failing, increment driver_loaded around the call to
+	   WIN_GLInitExtensions.
+
+	   Successful loading of the library is normally indicated by
+	   SDL_GL_LoadLibrary incrementing driver_loaded immediately after
+	   this function returns 0 to it.
+
+	   Alternatives to this are:
+	   - moving SDL_GL_DeduceMaxSupportedESProfile to both the WIN and
+	     X11 platforms while adding a function equivalent to
+	     SDL_GL_ExtensionSupported but which directly calls
+	     glGetProcAddress(). Having 3 copies of the
+		 SDL_GL_ExtensionSupported makes this alternative unattractive.
+	   - moving SDL_GL_DeduceMaxSupportedESProfile to a new file shared
+	     by the WIN and X11 platforms while adding a function equivalent
+		 to SDL_GL_ExtensionSupported. This is unattractive due to the
+		 number of project files that will need updating, plus there
+		 will be 2 copies of the SDL_GL_ExtensionSupported code.
+	   - Add a private equivalent of SDL_GL_ExtensionSupported to
+	     SDL_video.c.
+	   - Move the call to WIN_GL_InitExtensions back to WIN_CreateWindow
+	     and add a flag to gl_data to avoid multiple calls to this
+		 expensive function. This is probably the least objectionable
+		 alternative if this increment/decrement trick is unacceptable.
+
+	   Note that the driver_loaded > 0 check needs to remain in
+	   SDL_GL_ExtensionSupported and SDL_GL_GetProcAddress as they are
+	   public API functions.
+	*/
 	++_this->gl_config.driver_loaded;
 	WIN_GL_InitExtensions(_this);
 	--_this->gl_config.driver_loaded;
