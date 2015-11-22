@@ -640,10 +640,15 @@ WIN_GL_SetupWindow(_THIS, SDL_Window * window)
 SDL_bool
 WIN_GL_UseEGL(_THIS)
 {
-	const char* eglHint = SDL_GetHint(SDL_HINT_OPENGL_ES_DRIVER);
+	const char* eglHint;
+
 	SDL_assert(_this->gl_data != NULL);
+	SDL_assert(_this->gl_config.profile_mask == SDL_GL_CONTEXT_PROFILE_ES);
+
+	eglHint	= SDL_GetHint(SDL_HINT_OPENGL_ES_DRIVER);
 
     return ((eglHint != '\0' && !SDL_strncmp(eglHint, "1", 2))
+		    || _this->gl_config.major_version == 1 /* Context profiles do not support OpenGL ES 1. */
 		    || _this->gl_config.major_version > _this->gl_data->es_profile_max_supported_version.major
 		    || (_this->gl_config.major_version == _this->gl_data->es_profile_max_supported_version.major
 		        && _this->gl_config.minor_version > _this->gl_data->es_profile_max_supported_version.minor));
