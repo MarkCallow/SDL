@@ -222,13 +222,17 @@ X11_GL_LoadLibrary(_THIS, const char *path)
     }
 
     /* Initialize extensions */
+	/* See lengthy comment about the inc/dec in 
+	   ../windows/SDL_windowsopengl.c. */
+	++_this->gl_config.driver_loaded;
     X11_GL_InitExtensions(_this);
+	--_this->gl_config.driver_loaded;
     
     /* If we need a GL ES context and there's no  
      * GLX_EXT_create_context_es2_profile extension, switch over to X11_GLES functions  
      */
     if (_this->gl_config.profile_mask == SDL_GL_CONTEXT_PROFILE_ES && 
-        ! _this->gl_data->HAS_GLX_EXT_create_context_es2_profile ) {
+        X11_useEGL(_this) ) {
 #if SDL_VIDEO_OPENGL_EGL
         X11_GL_UnloadLibrary(_this);
         /* Better avoid conflicts! */
@@ -378,10 +382,16 @@ X11_GL_InitExtensions(_THIS)
         _this->gl_data->HAS_GLX_EXT_visual_info = SDL_TRUE;
     }
     
-    /* Check for GLX_EXT_create_context_es2_profile */
+    /* Check for WGL_EXT_create_context_es2_profile */
     if (HasExtension("GLX_EXT_create_context_es2_profile", extensions)) {
-        _this->gl_data->HAS_GLX_EXT_create_context_es2_profile = SDL_TRUE;
-    }
+		SDL_GL_DeduceMaxSupportedESProfile(
+	        &_this->gl_data->es_profile_max_supported_version.major,
+	        &_this->gl_data->es_profile_max_supported_version.minor
+		);
+	} else {
+		_this->gl_data->es_profile_max_supported_version.major = 0;
+		_this->gl_data->es_profile_max_supported_version.minor = 0;
+	}
 
     /* Check for GLX_ARB_context_flush_control */
     if (HasExtension("GLX_ARB_context_flush_control", extensions)) {
@@ -555,6 +565,23 @@ X11_GL_ErrorHandler(Display * d, XErrorEvent * e)
     }
 
     return (0);
+}
+
+SDL_bool
+X11_GL_UseEGL(_THIS)
+{
+	const char* eglHint;
+
+	SDL_assert(_this->gl_data != NULL);
+	SDL_assert(_this->gl_config.profile_mask == SDL_GL_CONTEXT_PROFILE_ES);
+
+	eglHint	= SDL_GetHint(SDL_HINT_OPENGL_ES_DRIVER);
+
+    return ((eglHint != '\0' && !SDL_strncmp(eglHint, "1", 2))
+		    || _this->gl_config.major_version == 1 /* Context profiles do not support OpenGL ES 1. */
+		    || _this->gl_config.major_version > _this->gl_data->es_profile_max_supported_version.major
+		    || (_this->gl_config.major_version == _this->gl_data->es_profile_max_supported_version.major
+		        && _this->gl_config.minor_version > _this->gl_data->es_profile_max_supported_version.minor));
 }
 
 SDL_GLContext
