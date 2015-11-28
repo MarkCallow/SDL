@@ -44,6 +44,12 @@ you need to
 * install [Mercurial](http://mercurial.selenic.com/)
 * install `git-remote-hg`.
 
+### Installing Mercurial
+
+When installing Mercurial for Windows, choose the appropriate `*py2.7`
+installer so that `git-remote-hg` can `import mercurial` from your
+Python installation. 
+
 ### Installing `git-remote-hg`
 
 `git-remote-hg` can be installed from this
@@ -62,14 +68,27 @@ sudo curl -o /usr/local/bin/git-remote-hg https://raw.githubusercontent.com/fing
 sudo chmod +x /usr/local/bin/git-remote-hg
 ```
 
-You need to ensure you have `python2` in your `$PATH`. On OS X,
-some distributions of Python 2 create this as a link to `python`,
-some do not. The Windows installer does not create this link. One
-solution is to make a copy of `%SystemDrive%\Python27\python.exe`
-(the default install location), e.g.
+If on Windows using Git Bash or Git Shell, create a ~/bin directory, making
+sure it is in your `$PATH`, and put it there instead of `/usr/local/bin`.
+
+:bangbang: If using Git Bash, do not be tempted to use `/bin`. The file will end up in
+`%USERPROFILE%\AppData\Local\VirtualStore\Program Files (x86)\Git\bin` and
+will not be visible to the Windows version of `python` which will be told by `env`
+to run `%SystemDrive%\Program Files (x86)\Git\bin\git-remote-hg`. The latter
+is the canonical location of `/bin`. I do not know if Git Shell has a similar
+issue. :bangbang:
+
+You need to ensure you have `python2` in your `$PATH`.
+
+On OS X, whether `python2` exists depends on which distribution of Python 2
+you are using. If it does not exist, make a link in `/usr/local/bin`.
+
+On Windows, the standard installer does not create a `python2`
+command. One solution is to make a copy of
+`%SystemDrive%\Python27\python.exe` (the default install location), e.g.
 
 ```bash
-cp $SYSTEMDRIVE/Python27/python.exe /usr/local/bin
+cp $SYSTEMDRIVE/Python27/python.exe ~/bin
 ```
 
 As a last resort you can edit `git-remote-hg` and change the
