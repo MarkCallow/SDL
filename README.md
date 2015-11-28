@@ -11,6 +11,9 @@ The tip at the time was http://hg.libsdl.org/SDL/rev/84285c1d8ca4.
 See [below](pulling_from_mercurial) for instructions on pulling from
 the [SDL Mercurial repository](http://hg.libsdl.org/SDL)
 
+See the main SDL [README](docs/README.mnd) for more information about
+SDL.
+
 What is Different Here
 ----------------------
 
@@ -99,7 +102,7 @@ git checkout upstream_master
 git pull
 ```
 
-:heavy_exclamation_mark: Warning: The first pull may take some time.
+:heavy_exclamation_mark: Warning: The pull may take some time.
 
 {# vim: set ai ts=4 sts=4 sw=2 expandtab textwidth=75:}
 
