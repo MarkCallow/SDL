@@ -21,7 +21,7 @@ This fork contains 2 main changes from SDL 2.0.4:
 
 1. Fixes for [SDL Bugzilla](https://bugzilla.libsdl.org/) issues
    [2570](https://bugzilla.libsdl.org/show_bug.cgi?id=2570) and
-   [3145](https://bugzilla.libsdl.org/show_bug.cgi?id=3145). These allow
+   [3145](https://bugzilla.libsdl.org/show_bug.cgi?id=3145). These
    * allow applications on Windows and X11 to hint that they want to use a
    linked OpenGL ES library even if the OpenGL driver supports OpenGL ES
    context creation.
