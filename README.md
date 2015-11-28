@@ -11,7 +11,7 @@ The tip at the time was http://hg.libsdl.org/SDL/rev/84285c1d8ca4.
 See [below](pulling_from_mercurial) for instructions on pulling from
 the [SDL Mercurial repository](http://hg.libsdl.org/SDL)
 
-See the main SDL [README](docs/README.mnd) for more information about
+See the main SDL [README](docs/README.md) for more information about
 SDL.
 
 What is Different Here
