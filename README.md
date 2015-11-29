@@ -31,8 +31,9 @@ This fork contains 2 main changes from SDL 2.0.4:
 2. A script to create pre-built SDL libraries for Android, as described in
    [SDL Bugzilla](https://bugzilla.libsdl.org/) issue [2839](https://bugzilla.libsdl.org/show_bug.cgi?id=2839)
    
-These fixes are needed by the [KTX project](https://github.com/KhronosGroup/KTX);
-this fork provides the source it uses.
+These fixes are needed by the
+[KTX project](https://github.com/KhronosGroup/KTX); this fork provides
+the source it uses.
 
 Pulling from Mercurial
 ----------------------
@@ -68,22 +69,25 @@ sudo curl -o /usr/local/bin/git-remote-hg https://raw.githubusercontent.com/fing
 sudo chmod +x /usr/local/bin/git-remote-hg
 ```
 
-If on Windows using Git Bash or Git Shell, create a ~/bin directory, making
+If using Git Bash or Git Shell on Windows, create a ~/bin directory, making
 sure it is in your `$PATH`, and put it there instead of `/usr/local/bin`.
 
-:bangbang: If using Git Bash, do not be tempted to use `/bin`. The file will end up in
+:bangbang: If using Git Bash, do not be tempted to use `/bin`. The file
+will end up in
 `%USERPROFILE%\AppData\Local\VirtualStore\Program Files (x86)\Git\bin` and
-will not be visible to the Windows version of `python` which will be told by `env`
-to run `%SystemDrive%\Program Files (x86)\Git\bin\git-remote-hg`. The latter
-is the canonical location of `/bin`. I do not know if Git Shell has a similar
-issue. :bangbang:
+will not be visible to the Windows version of `python` which will be told
+by `env` to run `%SystemDrive%\Program Files (x86)\Git\bin\git-remote-hg`.
+The latter is the canonical location of `/bin`. I do not know if
+Git Shell has a similar issue. :bangbang:
 
-You need to ensure you have `python2` in your `$PATH`.
+You need to ensure you have a `python2` command in some directory
+in your `$PATH`.
 
 On OS X, whether `python2` exists depends on which distribution of Python 2
-you are using. If it does not exist, make a link in `/usr/local/bin`.
+you are using. If it does not exist, make a link in `/usr/local/bin` to
+the `python` command.
 
-On Windows, the standard installer does not create a `python2`
+On Windows, the standard Python installer does not create a `python2`
 command. One solution is to make a copy of
 `%SystemDrive%\Python27\python.exe` (the default install location), e.g.
 
@@ -101,27 +105,18 @@ first line
 
 ### Pulling the Source
 
-Once Mercurial and `git-remote-hg` are installed, make sure you
-have the following remote defined
+Once Mercurial and `git-remote-hg` are installed, add a remote
+that points to the SDL Mercurial repo.
 
 ```bash
 git remote add upstream hg::http://hg.libsdl.org/SDL
 ```
-
-and set upstream for the `upstream_master` branch
-
-```bash
-git branch --set-upstream-to upstream/master
-```
-
-Once all this is set up you can simply do
+Then issue the following commands
 
 ```bash
 git checkout upstream_master
-git pull
+git pull upstream master
 ```
-
-:heavy_exclamation_mark: Warning: The pull may take some time.
 
 {# vim: set ai ts=4 sts=4 sw=2 expandtab textwidth=75:}
 
