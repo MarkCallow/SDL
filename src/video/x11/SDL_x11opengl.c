@@ -388,7 +388,10 @@ X11_GL_InitExtensions(_THIS)
 	        &_this->gl_data->es_profile_max_supported_version.major,
 	        &_this->gl_data->es_profile_max_supported_version.minor
 		);
-	} else {
+    } else if (HasExtension("GLX_EXT_create_context_es2_profile", extensions)) {
+        _this->gl_data->es_profile_max_supported_version.major = 2;
+        _this->gl_data->es_profile_max_supported_version.minor = 0;
+    } else {
 		_this->gl_data->es_profile_max_supported_version.major = 0;
 		_this->gl_data->es_profile_max_supported_version.minor = 0;
 	}
@@ -578,7 +581,7 @@ X11_GL_UseEGL(_THIS)
 	eglHint	= SDL_GetHint(SDL_HINT_OPENGL_ES_DRIVER);
 
     return ((eglHint != '\0' && !SDL_strncmp(eglHint, "1", 2))
-		    || _this->gl_config.major_version == 1 /* Context profiles do not support OpenGL ES 1. */
+		    || _this->gl_config.major_version == 1 /* No GLX extension for OpenGL ES 1.x profiles. */
 		    || _this->gl_config.major_version > _this->gl_data->es_profile_max_supported_version.major
 		    || (_this->gl_config.major_version == _this->gl_data->es_profile_max_supported_version.major
 		        && _this->gl_config.minor_version > _this->gl_data->es_profile_max_supported_version.minor));
