@@ -136,7 +136,7 @@ WIN_GL_LoadLibrary(_THIS, const char *path)
 	   extensions via SDL_GL_DeduceMaxSupportedESProfile. This uses
 	   SDL_GL_ExtensionSupported which in turn calls SDL_GL_GetProcAddress.
 	   However SDL_GL_GetProcAddress will fail if the library is not
-	   loaded; it checks if gl_config.driver_loaded > 0. To avoid this
+	   loaded; it checks for gl_config.driver_loaded > 0. To avoid this
 	   test failing, increment driver_loaded around the call to
 	   WIN_GLInitExtensions.
 
@@ -446,11 +446,14 @@ WIN_GL_InitExtensions(_THIS)
     }
 
     /* Check for WGL_EXT_create_context_es2_profile */
-    if (HasExtension("WGL_EXT_create_context_es2_profile", extensions)) {
+    if (HasExtension("WGL_EXT_create_context_es_profile", extensions)) {
 		SDL_GL_DeduceMaxSupportedESProfile(
 	        &_this->gl_data->es_profile_max_supported_version.major,
 	        &_this->gl_data->es_profile_max_supported_version.minor
 		);
+	} else if (HasExtension("WGL_EXT_create_context_es2_profile", extensions)) {
+		_this->gl_data->es_profile_max_supported_version.major = 2;
+		_this->gl_data->es_profile_max_supported_version.minor = 0;
 	} else {
 		_this->gl_data->es_profile_max_supported_version.major = 0;
 		_this->gl_data->es_profile_max_supported_version.minor = 0;
@@ -648,7 +651,7 @@ WIN_GL_UseEGL(_THIS)
 	eglHint	= SDL_GetHint(SDL_HINT_OPENGL_ES_DRIVER);
 
     return ((eglHint != '\0' && !SDL_strncmp(eglHint, "1", 2))
-		    || _this->gl_config.major_version == 1 /* Context profiles do not support OpenGL ES 1. */
+		    || _this->gl_config.major_version == 1 /* No WGL extension for OpenGL ES 1.x profiles. */
 		    || _this->gl_config.major_version > _this->gl_data->es_profile_max_supported_version.major
 		    || (_this->gl_config.major_version == _this->gl_data->es_profile_max_supported_version.major
 		        && _this->gl_config.minor_version > _this->gl_data->es_profile_max_supported_version.minor));
