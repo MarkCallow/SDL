@@ -5,8 +5,9 @@ Simple DirectMedia Layer
 This is a fork of the [SDL Mercurial repository](http://hg.libsdl.org/SDL) at
 http://hg.libsdl.org/SDL.
 
-Branch `upstream_master` reflects the most recent pull from that repo.
-The tip at the time was http://hg.libsdl.org/SDL/rev/84285c1d8ca4.
+Branch `upstream_master` reflects the most recent pull from that repo's
+`master` branch. The tip at the time was
+http://hg.libsdl.org/SDL/rev/e82bfd942409.
 
 See [below](pulling_from_mercurial) for instructions on pulling from
 the [SDL Mercurial repository](http://hg.libsdl.org/SDL)
@@ -58,9 +59,6 @@ Python installation.
 
 :o: Note: this is a fork of the original project with fixes for compability with
 Mercurial 3.2+.
-
-:bangbang: `git-remote-hg` does not work properly with Git for Windows.
-A fix is awaiting merge into the project.
 
 The example installation commands below copy `git-remote-hg` to `/usr/local/bin`.
  
