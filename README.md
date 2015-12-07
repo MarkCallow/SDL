@@ -23,12 +23,16 @@ This fork contains 2 main changes from SDL 2.0.4:
 1. Fixes for [SDL Bugzilla](https://bugzilla.libsdl.org/) issues
    [2570](https://bugzilla.libsdl.org/show_bug.cgi?id=2570) and
    [3145](https://bugzilla.libsdl.org/show_bug.cgi?id=3145). These
-   * allow applications on Windows and X11 to hint that they want to use a
-   linked OpenGL ES library even if the OpenGL driver supports OpenGL ES
-   context creation.
+   apply to the Windows and X11 platforms and
+   * allow applications to hint that they want to use a linked OpenGL
+   ES library even if the OpenGL driver supports OpenGL ES context
+   creation.
    * prevent a failure to create an OpenGL ES context when the requested
    version is greater than that supported by the OpenGL driver even though
    a suitable OpenGL ES library is available.
+   * prevent a failure to create an OpenGL ES 1.x context when the OpenGL
+   driver supports OpenGL ES context creation (they never support creating
+   OpenGL ES 1 contexts) even though a suitable OpenGL ES library is available.
 2. A script to create pre-built SDL libraries for Android, as described in
    [SDL Bugzilla](https://bugzilla.libsdl.org/) issue [2839](https://bugzilla.libsdl.org/show_bug.cgi?id=2839)
    
