@@ -371,7 +371,7 @@ X11_CreateWindow(_THIS, SDL_Window * window)
 #if SDL_VIDEO_OPENGL_EGL
         if (_this->gl_config.profile_mask == SDL_GL_CONTEXT_PROFILE_ES 
 #if SDL_VIDEO_OPENGL_GLX            
-            && ( !_this->gl_data || X11_UseEGL(_this) )
+            && ( !_this->gl_data || X11_GL_UseEGL(_this) )
 #endif
         ) {
             vinfo = X11_GLES_GetVisual(_this, display, screen);
@@ -571,7 +571,7 @@ X11_CreateWindow(_THIS, SDL_Window * window)
     if ((window->flags & SDL_WINDOW_OPENGL) && 
         _this->gl_config.profile_mask == SDL_GL_CONTEXT_PROFILE_ES
 #if SDL_VIDEO_OPENGL_GLX            
-        && ( !_this->gl_data || X11_UseEGL(_this) )
+        && ( !_this->gl_data || X11_GL_UseEGL(_this) )
 #endif  
     ) {
 #if SDL_VIDEO_OPENGL_EGL  

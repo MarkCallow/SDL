@@ -24,6 +24,7 @@
 
 #include "SDL_x11video.h"
 #include "SDL_assert.h"
+#include "SDL_hints.h"
 
 /* GLX implementation of SDL OpenGL support */
 
@@ -143,7 +144,6 @@ typedef GLXContext(*PFNGLXCREATECONTEXTATTRIBSARBPROC) (Display * dpy,
 
 static void X11_GL_InitExtensions(_THIS);
 
-
 int
 X11_GL_LoadLibrary(_THIS, const char *path)
 {
@@ -232,7 +232,7 @@ X11_GL_LoadLibrary(_THIS, const char *path)
      * GLX_EXT_create_context_es2_profile extension, switch over to X11_GLES functions  
      */
     if (_this->gl_config.profile_mask == SDL_GL_CONTEXT_PROFILE_ES && 
-        X11_useEGL(_this) ) {
+        X11_GL_UseEGL(_this) ) {
 #if SDL_VIDEO_OPENGL_EGL
         X11_GL_UnloadLibrary(_this);
         /* Better avoid conflicts! */

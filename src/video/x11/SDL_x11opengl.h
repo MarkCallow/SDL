@@ -65,7 +65,7 @@ struct SDL_GLDriverData
 extern int X11_GL_LoadLibrary(_THIS, const char *path);
 extern void *X11_GL_GetProcAddress(_THIS, const char *proc);
 extern void X11_GL_UnloadLibrary(_THIS);
-extern SDL_bool WIN_GL_UseEGL(_THIS);
+extern SDL_bool X11_GL_UseEGL(_THIS);
 extern XVisualInfo *X11_GL_GetVisual(_THIS, Display * display, int screen);
 extern SDL_GLContext X11_GL_CreateContext(_THIS, SDL_Window * window);
 extern int X11_GL_MakeCurrent(_THIS, SDL_Window * window,
