@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2015 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2017 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -31,6 +31,7 @@
 /* Windows includes */
 #include <agile.h>
 #include <windows.graphics.display.h>
+#include <windows.system.display.h>
 #include <dxgi.h>
 #include <dxgi1_2.h>
 using namespace Windows::ApplicationModel::Core;
@@ -41,7 +42,8 @@ using namespace Windows::UI::ViewManagement;
 
 
 /* [re]declare Windows GUIDs locally, to limit the amount of external lib(s) SDL has to link to */
-static const GUID IID_IDXGIFactory2 = { 0x50c83a1c, 0xe072, 0x4c48,{ 0x87, 0xb0, 0x36, 0x30, 0xfa, 0x36, 0xa6, 0xd0 } };
+static const GUID IID_IDisplayRequest   = { 0xe5732044, 0xf49f, 0x4b60, { 0x8d, 0xd4, 0x5e, 0x7e, 0x3a, 0x63, 0x2a, 0xc0 } };
+static const GUID IID_IDXGIFactory2     = { 0x50c83a1c, 0xe072, 0x4c48, { 0x87, 0xb0, 0x36, 0x30, 0xfa, 0x36, 0xa6, 0xd0 } };
 
 
 /* SDL includes */
@@ -61,6 +63,7 @@ extern "C" {
 #include "../../core/winrt/SDL_winrtapp_xaml.h"
 #include "SDL_winrtvideo_cpp.h"
 #include "SDL_winrtevents_c.h"
+#include "SDL_winrtgamebar_cpp.h"
 #include "SDL_winrtmouse_c.h"
 #include "SDL_main.h"
 #include "SDL_system.h"
@@ -80,6 +83,11 @@ static void WINRT_SetWindowSize(_THIS, SDL_Window * window);
 static void WINRT_SetWindowFullscreen(_THIS, SDL_Window * window, SDL_VideoDisplay * display, SDL_bool fullscreen);
 static void WINRT_DestroyWindow(_THIS, SDL_Window * window);
 static SDL_bool WINRT_GetWindowWMInfo(_THIS, SDL_Window * window, SDL_SysWMinfo * info);
+
+
+/* Misc functions */
+static ABI::Windows::System::Display::IDisplayRequest * WINRT_CreateDisplayRequest(_THIS);
+extern void WINRT_SuspendScreenSaver(_THIS);
 
 
 /* SDL-internal globals: */
@@ -118,18 +126,15 @@ WINRT_CreateDevice(int devindex)
     device = (SDL_VideoDevice *) SDL_calloc(1, sizeof(SDL_VideoDevice));
     if (!device) {
         SDL_OutOfMemory();
-        if (device) {
-            SDL_free(device);
-        }
         return (0);
     }
 
     data = (SDL_VideoData *) SDL_calloc(1, sizeof(SDL_VideoData));
     if (!data) {
         SDL_OutOfMemory();
+        SDL_free(device);
         return (0);
     }
-    SDL_zerop(data);
     device->driverdata = data;
 
     /* Set the function pointers */
@@ -142,6 +147,15 @@ WINRT_CreateDevice(int devindex)
     device->SetDisplayMode = WINRT_SetDisplayMode;
     device->PumpEvents = WINRT_PumpEvents;
     device->GetWindowWMInfo = WINRT_GetWindowWMInfo;
+    device->SuspendScreenSaver = WINRT_SuspendScreenSaver;
+
+#if NTDDI_VERSION >= NTDDI_WIN10
+    device->HasScreenKeyboardSupport = WINRT_HasScreenKeyboardSupport;
+    device->ShowScreenKeyboard = WINRT_ShowScreenKeyboard;
+    device->HideScreenKeyboard = WINRT_HideScreenKeyboard;
+    device->IsScreenKeyboardShown = WINRT_IsScreenKeyboardShown;
+#endif
+
 #ifdef SDL_VIDEO_OPENGL_EGL
     device->GL_LoadLibrary = WINRT_GLES_LoadLibrary;
     device->GL_GetProcAddress = WINRT_GLES_GetProcAddress;
@@ -167,12 +181,17 @@ VideoBootStrap WINRT_bootstrap = {
 int
 WINRT_VideoInit(_THIS)
 {
+    SDL_VideoData * driverdata = (SDL_VideoData *) _this->driverdata;
     if (WINRT_InitModes(_this) < 0) {
         return -1;
     }
     WINRT_InitMouse(_this);
     WINRT_InitTouch(_this);
-
+    WINRT_InitGameBar(_this);
+    if (driverdata) {
+        /* Initialize screensaver-disabling support */
+        driverdata->displayRequest = WINRT_CreateDisplayRequest(_this);
+    }
     return 0;
 }
 
@@ -315,6 +334,61 @@ WINRT_AddDisplaysForAdapter (_THIS, IDXGIFactory2 * dxgiFactory2, int adapterInd
 
     for (int outputIndex = 0; ; ++outputIndex) {
         if (WINRT_AddDisplaysForOutput(_this, dxgiAdapter1, outputIndex) < 0) {
+            /* HACK: The Windows App Certification Kit 10.0 can fail, when
+               running the Store Apps' test, "Direct3D Feature Test".  The
+               certification kit's error is:
+
+               "Application App was not running at the end of the test. It likely crashed or was terminated for having become unresponsive."
+
+               This was caused by SDL/WinRT's DXGI failing to report any
+               outputs.  Attempts to get the 1st display-output from the
+               1st display-adapter can fail, with IDXGIAdapter::EnumOutputs
+               returning DXGI_ERROR_NOT_FOUND.  This could be a bug in Windows,
+               the Windows App Certification Kit, or possibly in SDL/WinRT's
+               display detection code.  Either way, try to detect when this
+               happens, and use a hackish means to create a reasonable-as-possible
+               'display mode'.  -- DavidL
+            */
+            if (adapterIndex == 0 && outputIndex == 0) {
+                SDL_VideoDisplay display;
+                SDL_DisplayMode mode;
+#if SDL_WINRT_USE_APPLICATIONVIEW
+                ApplicationView ^ appView = ApplicationView::GetForCurrentView();
+#endif
+                CoreWindow ^ coreWin = CoreWindow::GetForCurrentThread();
+                SDL_zero(display);
+                SDL_zero(mode);
+                display.name = "DXGI Display-detection Workaround";
+
+                /* HACK: ApplicationView's VisibleBounds property, appeared, via testing, to
+                   give a better approximation of display-size, than did CoreWindow's
+                   Bounds property, insofar that ApplicationView::VisibleBounds seems like
+                   it will, at least some of the time, give the full display size (during the
+                   failing test), whereas CoreWindow might not.  -- DavidL
+                */
+
+#if (NTDDI_VERSION >= NTDDI_WIN10) || (SDL_WINRT_USE_APPLICATIONVIEW && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+                mode.w = WINRT_DIPS_TO_PHYSICAL_PIXELS(appView->VisibleBounds.Width);
+                mode.h = WINRT_DIPS_TO_PHYSICAL_PIXELS(appView->VisibleBounds.Height);
+#else
+                /* On platform(s) that do not support VisibleBounds, such as Windows 8.1,
+                   fall back to CoreWindow's Bounds property.
+                */
+                mode.w = WINRT_DIPS_TO_PHYSICAL_PIXELS(coreWin->Bounds.Width);
+                mode.h = WINRT_DIPS_TO_PHYSICAL_PIXELS(coreWin->Bounds.Height);
+#endif
+
+                mode.format = DXGI_FORMAT_B8G8R8A8_UNORM;
+                mode.refresh_rate = 0;  /* Display mode is unknown, so just fill in zero, as specified by SDL's header files */
+                display.desktop_mode = mode;
+                display.current_mode = mode;
+                if ((SDL_AddDisplayMode(&display, &mode) < 0) ||
+                    (SDL_AddVideoDisplay(&display) < 0))
+                {
+                    return SDL_SetError("Failed to apply DXGI Display-detection workaround");
+                }
+            }
+
             break;
         }
     }
@@ -341,7 +415,6 @@ WINRT_InitModes(_THIS)
         return -1;
     }
 
-    int adapterIndex = 0;
     for (int adapterIndex = 0; ; ++adapterIndex) {
         if (WINRT_AddDisplaysForAdapter(_this, dxgiFactory2, adapterIndex) < 0) {
             break;
@@ -360,6 +433,12 @@ WINRT_SetDisplayMode(_THIS, SDL_VideoDisplay * display, SDL_DisplayMode * mode)
 void
 WINRT_VideoQuit(_THIS)
 {
+    SDL_VideoData * driverdata = (SDL_VideoData *) _this->driverdata;
+    if (driverdata && driverdata->displayRequest) {
+        driverdata->displayRequest->Release();
+        driverdata->displayRequest = NULL;
+    }
+    WINRT_QuitGameBar(_this);
     WINRT_QuitMouse(_this);
 }
 
@@ -429,7 +508,7 @@ WINRT_DetectWindowFlags(SDL_Window * window)
         // data->coreWindow->PointerPosition is not supported on WinPhone 8.0
         latestFlags |= SDL_WINDOW_MOUSE_FOCUS;
 #else
-        if (data->coreWindow->Bounds.Contains(data->coreWindow->PointerPosition)) {
+        if (data->coreWindow->Visible && data->coreWindow->Bounds.Contains(data->coreWindow->PointerPosition)) {
             latestFlags |= SDL_WINDOW_MOUSE_FOCUS;
         }
 #endif
@@ -438,6 +517,7 @@ WINRT_DetectWindowFlags(SDL_Window * window)
     return latestFlags;
 }
 
+// TODO, WinRT: consider removing WINRT_UpdateWindowFlags, and just calling WINRT_DetectWindowFlags as-appropriate (with appropriate calls to SDL_SendWindowEvent)
 void
 WINRT_UpdateWindowFlags(SDL_Window * window, Uint32 mask)
 {
@@ -449,6 +529,32 @@ WINRT_UpdateWindowFlags(SDL_Window * window, Uint32 mask)
         }
         window->flags = (window->flags & ~mask) | (apply & mask);
     }
+}
+
+static bool
+WINRT_IsCoreWindowActive(CoreWindow ^ coreWindow)
+{
+    /* WinRT does not appear to offer API(s) to determine window-activation state,
+       at least not that I am aware of in Win8 - Win10.  As such, SDL tracks this
+       itself, via window-activation events.
+       
+       If there *is* an API to track this, it should probably get used instead
+       of the following hack (that uses "SDLHelperWindowActivationState").
+         -- DavidL.
+    */
+    if (coreWindow->CustomProperties->HasKey("SDLHelperWindowActivationState")) {
+        CoreWindowActivationState activationState = \
+            safe_cast<CoreWindowActivationState>(coreWindow->CustomProperties->Lookup("SDLHelperWindowActivationState"));
+        return (activationState != CoreWindowActivationState::Deactivated);
+    }
+
+    /* Assume that non-SDL tracked windows are active, although this should
+       probably be avoided, if possible.
+       
+       This might not even be possible, in normal SDL use, at least as of
+       this writing (Dec 22, 2015; via latest hg.libsdl.org/SDL clone)  -- DavidL
+    */
+    return true;
 }
 
 int
@@ -515,7 +621,7 @@ WINRT_CreateWindow(_THIS, SDL_Window * window)
                 _this->egl_data->egl_config,
                 cpp_winrtEglWindow, NULL);
             if (data->egl_surface == NULL) {
-                return SDL_SetError("eglCreateWindowSurface failed");
+                return SDL_EGL_SetError("unable to create EGL native-window surface", "eglCreateWindowSurface");
             }
         } else if (data->coreWindow.Get() != nullptr) {
             /* Attempt to create a window surface using newer versions of
@@ -528,7 +634,7 @@ WINRT_CreateWindow(_THIS, SDL_Window * window)
                 coreWindowAsIInspectable,
                 NULL);
             if (data->egl_surface == NULL) {
-                return SDL_SetError("eglCreateWindowSurface failed");
+                return SDL_EGL_SetError("unable to create EGL native-window surface", "eglCreateWindowSurface");
             }
         } else {
             return SDL_SetError("No supported means to create an EGL window surface are available");
@@ -591,12 +697,7 @@ WINRT_CreateWindow(_THIS, SDL_Window * window)
         );
 
         /* Try detecting if the window is active */
-        bool isWindowActive = true;     /* Presume the window is active, unless we've been told otherwise */
-        if (data->coreWindow->CustomProperties->HasKey("SDLHelperWindowActivationState")) {
-            CoreWindowActivationState activationState = \
-                safe_cast<CoreWindowActivationState>(data->coreWindow->CustomProperties->Lookup("SDLHelperWindowActivationState"));
-            isWindowActive = (activationState != CoreWindowActivationState::Deactivated);
-        }
+        bool isWindowActive = WINRT_IsCoreWindowActive(data->coreWindow.Get());
         if (isWindowActive) {
             SDL_SetKeyboardFocus(window);
         }
@@ -627,13 +728,16 @@ WINRT_SetWindowFullscreen(_THIS, SDL_Window * window, SDL_VideoDisplay * display
 {
 #if NTDDI_VERSION >= NTDDI_WIN10
     SDL_WindowData * data = (SDL_WindowData *)window->driverdata;
-    if (fullscreen) {
-        if (!data->appView->IsFullScreenMode) {
-            data->appView->TryEnterFullScreenMode();    // TODO, WinRT: return failure (to caller?) from TryEnterFullScreenMode()
-        }
-    } else {
-        if (data->appView->IsFullScreenMode) {
-            data->appView->ExitFullScreenMode();
+    bool isWindowActive = WINRT_IsCoreWindowActive(data->coreWindow.Get());
+    if (isWindowActive) {
+        if (fullscreen) {
+            if (!data->appView->IsFullScreenMode) {
+                data->appView->TryEnterFullScreenMode();    // TODO, WinRT: return failure (to caller?) from TryEnterFullScreenMode()
+            }
+        } else {
+            if (data->appView->IsFullScreenMode) {
+                data->appView->ExitFullScreenMode();
+            }
         }
     }
 #endif
@@ -672,6 +776,65 @@ WINRT_GetWindowWMInfo(_THIS, SDL_Window * window, SDL_SysWMinfo * info)
         return SDL_FALSE;
     }
     return SDL_FALSE;
+}
+
+static ABI::Windows::System::Display::IDisplayRequest *
+WINRT_CreateDisplayRequest(_THIS)
+{
+    /* Setup a WinRT DisplayRequest object, usable for enabling/disabling screensaver requests */
+    wchar_t *wClassName = L"Windows.System.Display.DisplayRequest";
+    HSTRING hClassName;
+    IActivationFactory *pActivationFactory = NULL;
+    IInspectable * pDisplayRequestRaw = nullptr;
+    ABI::Windows::System::Display::IDisplayRequest * pDisplayRequest = nullptr;
+    HRESULT hr;
+
+    hr = ::WindowsCreateString(wClassName, (UINT32)wcslen(wClassName), &hClassName);
+    if (FAILED(hr)) {
+        goto done;
+    }
+
+    hr = Windows::Foundation::GetActivationFactory(hClassName, &pActivationFactory);
+    if (FAILED(hr)) {
+        goto done;
+    }
+
+    hr = pActivationFactory->ActivateInstance(&pDisplayRequestRaw);
+    if (FAILED(hr)) {
+        goto done;
+    }
+
+    hr = pDisplayRequestRaw->QueryInterface(IID_IDisplayRequest, (void **) &pDisplayRequest);
+    if (FAILED(hr)) {
+        goto done;
+    }
+
+done:
+    if (pDisplayRequestRaw) {
+        pDisplayRequestRaw->Release();
+    }
+    if (pActivationFactory) {
+        pActivationFactory->Release();
+    }
+    if (hClassName) {
+        ::WindowsDeleteString(hClassName);
+    }
+
+    return pDisplayRequest;
+}
+
+void
+WINRT_SuspendScreenSaver(_THIS)
+{
+    SDL_VideoData *driverdata = (SDL_VideoData *)_this->driverdata;
+    if (driverdata && driverdata->displayRequest) {
+        ABI::Windows::System::Display::IDisplayRequest * displayRequest = (ABI::Windows::System::Display::IDisplayRequest *) driverdata->displayRequest;
+        if (_this->suspend_screensaver) {
+            displayRequest->RequestActive();
+        } else {
+            displayRequest->RequestRelease();
+        }
+    }
 }
 
 #endif /* SDL_VIDEO_DRIVER_WINRT */
