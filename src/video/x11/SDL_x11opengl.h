@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2015 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2017 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -20,8 +20,8 @@
 */
 #include "../../SDL_internal.h"
 
-#ifndef _SDL_x11opengl_h
-#define _SDL_x11opengl_h
+#ifndef SDL_x11opengl_h_
+#define SDL_x11opengl_h_
 
 #if SDL_VIDEO_OPENGL_GLX
 #include "SDL_opengl.h"
@@ -37,7 +37,7 @@ struct SDL_GLDriverData
     SDL_bool HAS_GLX_ARB_context_flush_control;
 
 	/* Max version of OpenGL ES context that can be created if the
-	   implementation supports WGL_EXT_create_context_es2_profile.
+	   implementation supports GLX_EXT_create_context_es2_profile.
 	   major = minor = 0 when unsupported.
 	 */
 	struct {
@@ -72,11 +72,11 @@ extern int X11_GL_MakeCurrent(_THIS, SDL_Window * window,
                               SDL_GLContext context);
 extern int X11_GL_SetSwapInterval(_THIS, int interval);
 extern int X11_GL_GetSwapInterval(_THIS);
-extern void X11_GL_SwapWindow(_THIS, SDL_Window * window);
+extern int X11_GL_SwapWindow(_THIS, SDL_Window * window);
 extern void X11_GL_DeleteContext(_THIS, SDL_GLContext context);
 
 #endif /* SDL_VIDEO_OPENGL_GLX */
 
-#endif /* _SDL_x11opengl_h */
+#endif /* SDL_x11opengl_h_ */
 
 /* vi: set ts=4 sw=4 expandtab: */
