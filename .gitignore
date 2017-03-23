@@ -1,6 +1,7 @@
 syntax:glob
 aclocal.m4
 autom4te*
+CMakeFiles
 config.cache
 config.log
 config.status
