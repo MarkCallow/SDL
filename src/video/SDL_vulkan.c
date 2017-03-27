@@ -49,11 +49,13 @@
 #elif SDL_VIDEO_DRIVER_COCOA
 #define VK_USE_PLATFORM_MACOS_MVK
 typedef struct _SDL_metalview SDL_metalview;
-SDL_metalview* SDL_AddMetalView(SDL_Window* window);
+SDL_metalview* Cocoa_Mtl_AddMetalView(SDL_Window* window);
+void Cocoa_Mtl_GetDrawableSize(SDL_Window*, int* w, int* h);
 #elif SDL_VIDEO_DRIVER_UIKIT
 #define VK_USE_PLATFORM_IOS_MVK
 typedef struct _SDL_metalview SDL_metalview;
-SDL_metalview* SDL_AddMetalView(SDL_Window* window);
+SDL_metalview* UIKit_Mtl_AddMetalView(SDL_Window* window);
+void UIKit_Mtl_GetDrawableSize(SDL_Window*, int* w, int* h);
 #elif SDL_VIDEO_DRIVER_WINDOWS
 #define VK_USE_PLATFORM_WIN32_KHR
 #else
@@ -72,7 +74,8 @@ SDL_metalview* SDL_AddMetalView(SDL_Window* window);
 
 static int
 SetNames(unsigned int capacity, const char** names,
-         unsigned inCount, const char* const* inNames) {
+         unsigned inCount, const char* const* inNames)
+{
     if (names) {
         if (capacity < inCount) {
             SDL_SetError("Insufficient capacity for extension names: %u < %u",
@@ -86,7 +89,8 @@ SetNames(unsigned int capacity, const char** names,
 }
 
 int
-SDL_GetVulkanInstanceExtensions(unsigned length, const char** names) {
+SDL_Vulkan_GetInstanceExtensions(unsigned length, const char** names)
+{
     const char *driver = SDL_GetCurrentVideoDriver();
     if (!driver) {
         SDL_SetError("No video driver - has SDL_Init(SDL_INIT_VIDEO) been called?");
@@ -137,8 +141,9 @@ SDL_GetVulkanInstanceExtensions(unsigned length, const char** names) {
 }
 
 int
-SDL_CreateVulkanSurface(SDL_Window* window,
-                        VkInstance instance, VkSurfaceKHR* surface) {
+SDL_Vulkan_CreateSurface(SDL_Window* window,
+                         VkInstance instance, VkSurfaceKHR* surface)
+{
     if (!window) {
         SDL_SetError("'window' is null");
         return -1;
@@ -182,7 +187,7 @@ SDL_CreateVulkanSurface(SDL_Window* window,
         createInfo.flags = 0;
         // pView must be a reference to an NSView backed by a CALayer
         // instance of type CAMetalLayer.
-        createInfo.pView = SDL_AddMetalView(window);
+        createInfo.pView = UIKit_Mtl_AddMetalView(window);
       
         if (createInfo.pView != NULL) {
             VkResult r =
@@ -210,7 +215,7 @@ SDL_CreateVulkanSurface(SDL_Window* window,
         createInfo.flags = 0;
         // pView must be a reference to an NSView backed by a CALayer
         // instance of type CAMetalLayer.
-        createInfo.pView = SDL_AddMetalView(window);
+        createInfo.pView = Cocoa_Mtl_AddMetalView(window);
         
         if (createInfo.pView != NULL) {
             VkResult r =
@@ -271,4 +276,16 @@ SDL_CreateVulkanSurface(SDL_Window* window,
                      (int)wminfo.subsystem);
         return 0;
     }
+}
+
+void
+SDL_Vulkan_GetDrawableSize(SDL_Window * window, int *w, int *h)
+{
+#if SDL_VIDEO_DRIVER_UIKIT
+    UIKit_Mtl_GetDrawableSize(window, w, h);
+#elif SDL_VIDEO_DRIVER_COCOA
+    Cocoa_Mtl_GetDrawableSize(window, w, h);
+#else
+    SDL_GetWindowSize(window, w, h);
+#endif
 }

@@ -1382,7 +1382,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				FD6526810DE8FCDD002AD96B /* SDL_systimer.c in Sources */,
-				4D4D63C61E7CB3C500515ED4 /* SDL_vulkan.c in Sources */,
 				FD6526800DE8FCDD002AD96B /* SDL_timer.c in Sources */,
 				FD3F4A7B0DEA620800C5B771 /* SDL_string.c in Sources */,
 				FD6526660DE8FCDD002AD96B /* SDL_dummyaudio.c in Sources */,
@@ -1428,6 +1427,7 @@
 				FDA684640DF2374E00F98A1A /* SDL_stretch.c in Sources */,
 				FDA684660DF2374E00F98A1A /* SDL_surface.c in Sources */,
 				FDA684680DF2374E00F98A1A /* SDL_video.c in Sources */,
+				4D4D63C61E7CB3C500515ED4 /* SDL_vulkan.c in Sources */,
 				FDA685FB0DF244C800F98A1A /* SDL_nullevents.c in Sources */,
 				FDA685FF0DF244C800F98A1A /* SDL_nullvideo.c in Sources */,
 				FD5F9D2F0E0E08B3008E885B /* SDL_joystick.c in Sources */,

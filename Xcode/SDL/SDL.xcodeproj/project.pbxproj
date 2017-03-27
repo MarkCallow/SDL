@@ -1036,7 +1036,6 @@
 		4D4D63F51E7D35B600515ED4 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		4D4D63F91E7D3BA700515ED4 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		4D4D64291E81538100515ED4 /* libc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++.tbd"; path = "usr/lib/libc++.tbd"; sourceTree = SDKROOT; };
-		4D4D64311E8158F200515ED4 /* SDL_vulkan.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SDL_vulkan.h; path = ../../include/SDL_vulkan.h; sourceTree = "<group>"; };
 		56115BB91DF72C6D00F47E1E /* SDL_dataqueue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = SDL_dataqueue.c; path = ../../src/SDL_dataqueue.c; sourceTree = "<group>"; };
 		56115BBA1DF72C6D00F47E1E /* SDL_dataqueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SDL_dataqueue.h; path = ../../src/SDL_dataqueue.h; sourceTree = "<group>"; };
 		566CDE8D148F0AC200C5A9BB /* SDL_dropevents_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SDL_dropevents_c.h; sourceTree = "<group>"; };
@@ -1695,7 +1694,6 @@
 		0867D691FE84028FC02AAC07 /* SDLFramework */ = {
 			isa = PBXGroup;
 			children = (
-				4D4D64311E8158F200515ED4 /* SDL_vulkan.h */,
 				F5A2EF3900C6A39A01000001 /* BUGS.txt */,
 				F59C70FC00D5CB5801000001 /* pkg-support */,
 				0153844A006D81B07F000001 /* Public Headers */,

@@ -34,8 +34,13 @@
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
 
+#define METALVIEW_TAG 255
 
 @interface SDL_metalview : UIView
+
+- (instancetype)initWithFrame:(CGRect)frame
+                        scale:(CGFloat)scale
+                        tag:(int)tag;
 
 @property (retain, nonatomic) CAMetalLayer *metalLayer;
 
@@ -49,6 +54,8 @@
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
+                        scale:(CGFloat)scale
+                          tag:(int)tag
 {
     if ((self = [super initWithFrame:frame])) {
         /* Resize properly when rotated. */
@@ -57,6 +64,10 @@
         _metalLayer = (CAMetalLayer *) self.layer;
         _metalLayer.opaque = YES;
         _metalLayer.device = MTLCreateSystemDefaultDevice();
+
+        /* Set the appropriate scale (for retina display support) */
+        self.contentScaleFactor = scale;
+        self.tag = tag;
 
         [self updateDrawableSize];
     }
@@ -85,20 +96,19 @@
 typedef struct _SDL_metalview SDL_metalview;
 #endif
 
-SDL_metalview* SDL_AddMetalView(SDL_Window* window)
+SDL_metalview*
+UIKit_Mtl_AddMetalView(SDL_Window* window)
 {
 #if !TARGET_IPHONE_SIMULATOR
     SDL_WindowData *data = (__bridge SDL_WindowData *)window->driverdata;
-    SDL_uikitview* view = (SDL_uikitview*)data.uiwindow.rootViewController.view;
+    SDL_uikitview *view = (SDL_uikitview*)data.uiwindow.rootViewController.view;
     CGFloat scale = 1.0;
     
-    SDL_metalview *metalview = [[SDL_metalview alloc] initWithFrame:view.frame];
     if (window->flags & SDL_WINDOW_ALLOW_HIGHDPI) {
         /* Set the scale to the natural scale factor of the screen - the
          * backing dimensions of the Metal view will match the pixel
          * dimensions of the screen rather than the dimensions in points.
-         * XXX There is currently no way for an app to query the view
-         * dimensions. */
+         */
 #ifdef __IPHONE_8_0
         if ([data.uiwindow.screen respondsToSelector:@selector(nativeScale)]) {
             scale = data.uiwindow.screen.nativeScale;
@@ -108,7 +118,10 @@ SDL_metalview* SDL_AddMetalView(SDL_Window* window)
             scale = data.uiwindow.screen.scale;
         }
     }
-    metalview.contentScaleFactor = scale;
+    SDL_metalview *metalview
+         = [[SDL_metalview alloc] initWithFrame:view.frame
+                                          scale:scale
+                                            tag:METALVIEW_TAG];
 #if 1
     [view addSubview:metalview];
 #else
@@ -127,4 +140,25 @@ SDL_metalview* SDL_AddMetalView(SDL_Window* window)
 #else
     return NULL;
 #endif
+}
+
+void
+UIKit_Mtl_GetDrawableSize(SDL_Window * window, int * w, int * h)
+{
+    SDL_WindowData *data = (__bridge SDL_WindowData *)window->driverdata;
+    SDL_uikitview *view = (SDL_uikitview*)data.uiwindow.rootViewController.view;
+#if !TARGET_IPHONE_SIMULATOR
+    SDL_metalview* metalview = [view viewWithTag:METALVIEW_TAG];
+    if (metalview) {
+        CAMetalLayer *layer = (CAMetalLayer*)metalview.layer;
+        assert(layer != NULL);
+        // XXX Something is setting drawable size back to the size in points.
+        // Possiby a bug in MoltenVK. May need to * metalview.contentScaleFactor
+        if (w)
+            *w = layer.drawableSize.width;
+        if (h)
+            *h = layer.drawableSize.height;
+    } else
+#endif
+        SDL_GetWindowSize(window, w, h);
 }
