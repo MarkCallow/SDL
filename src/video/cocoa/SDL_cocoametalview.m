@@ -26,51 +26,115 @@
 #import "../SDL_sysvideo.h"
 #import "SDL_cocoawindow.h"
 
+#define METALVIEW_TAG 255
+
 @interface SDL_metalview : NSView {
     CAMetalLayer* _metalLayer;
+    NSInteger _tag;
+    bool _useHighDPI;
 }
 
+- (instancetype)initWithFrame:(NSRect)frame
+                   useHighDPI:(bool)useHighDPI;
+
 @property (retain, nonatomic) CAMetalLayer *metalLayer;
+/* Override superclass tag so this class can set it. */
+@property (assign, readonly) NSInteger tag;
 
 @end
 
 @implementation SDL_metalview
 
 @synthesize metalLayer = _metalLayer;
+/* The synthesized getter should be called by super's viewWithTag. */
+@synthesize tag = _tag;
 
 + (Class)layerClass
 {
   return [CAMetalLayer class];
 }
 
-- (instancetype)initWithFrame:(NSRect)frame;
+- (instancetype)initWithFrame:(NSRect)frame
+                   useHighDPI:(bool)useHighDPI
 {
   if ((self = [super initWithFrame:frame])) {
     
     /* Allow resize. */
     self.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+    _tag = METALVIEW_TAG;
+      
+    // There is a contentsScale property.
     
     _metalLayer = [CAMetalLayer layer];
     _metalLayer.framebufferOnly = YES;
     _metalLayer.opaque = YES;
     _metalLayer.device = MTLCreateSystemDefaultDevice();
-      
-    //metalLayer.drawableSize = (CGSize) [nsview convertRectToBacking:[nsview bounds]].size;
-    //[self updateDrawableSize];
+    _useHighDPI = useHighDPI;
+    if (_useHighDPI) {
+        /* Isn't there a better way to convert from NSSize to CGSize? */
+        NSSize size = [self convertRectToBacking:[self bounds]].size;
+        CGSize cgsize = *(CGSize*)&size;
+        _metalLayer.drawableSize = cgsize;
+    }
+    [self setLayer:_metalLayer];
+    [self setWantsLayer:YES];
+    [self updateDrawableSize];
   }
   
   return self;
 }
 
+/* Set the size of the metal drawables when the view is resized. */
+- (void)resizeSubviewsWithOldSize:(NSSize)oldSize {
+    [super resizeSubviewsWithOldSize:oldSize];
+    [self updateDrawableSize];
+}
+
+- (void)updateDrawableSize
+{
+    if (_useHighDPI) {
+        NSSize size = [self convertRectToBacking:[self bounds]].size;
+        CGSize cgsize = *(CGSize*)&size;
+        _metalLayer.drawableSize = cgsize;
+    }
+}
+
 @end
 
-SDL_metalview* SDL_AddMetalView(SDL_Window* window)
+SDL_metalview*
+Cocoa_Mtl_AddMetalView(SDL_Window* window)
 {
     SDL_WindowData *data = (SDL_WindowData *)window->driverdata;
     NSView *view = data->nswindow.contentView;
-    SDL_metalview *metalview = [[SDL_metalview alloc] initWithFrame:view.frame];
+    SDL_metalview *metalview
+        = [[SDL_metalview alloc] initWithFrame:view.frame
+                       useHighDPI:(window->flags & SDL_WINDOW_ALLOW_HIGHDPI)];
     [view addSubview:metalview];
   
     return metalview;
 }
 
+void
+Cocoa_Mtl_GetDrawableSize(SDL_Window * window, int * w, int * h)
+{
+    SDL_WindowData *data = (__bridge SDL_WindowData *)window->driverdata;
+    NSView *view = data->nswindow.contentView;
+    SDL_metalview* metalview = [view viewWithTag:METALVIEW_TAG];
+    if (metalview) {
+#if 1
+        CAMetalLayer *layer = (CAMetalLayer*)metalview.layer;
+        assert(layer != NULL);
+        if (w)
+            *w = layer.drawableSize.width;
+        if (h)
+            *h = layer.drawableSize.height;
+#else
+        /* Fallback in case the above doesn't work. */
+        NSSize size = [view convertRectToBacking:[view bounds]].size;
+        if (w)
+            *w = size.width;
+        if (h)
+            *h = size.height;
+#endif
+    }
+}
