@@ -33,16 +33,11 @@
 
 #include "../SDL_internal.h"
 
-#include <SDL_config.h>
-#include <SDL_video.h>  /* For SDL_Window */
-/* The following is necessary when compiling this file outside of SDL
- * due to the linux build using a generated SDL_config.h which is not
- * visible outside SDL. The other platforms use the public SDL_config.h.
- */
-#if __LINUX__
-#define SDL_VIDEO_DRIVER_WAYLAND 1
-#define SDL_VIDEO_DRIVER_X11 1
-#endif
+#include "SDL_config.h"
+#include "SDL_video.h"
+#include <SDL_vulkan.h>
+
+#if SDL_VIDEO_VULKAN
 
 #if SDL_VIDEO_DRIVER_ANDROID
 #define VK_USE_PLATFORM_ANDROID_KHR
@@ -59,6 +54,10 @@ void UIKit_Mtl_GetDrawableSize(SDL_Window*, int* w, int* h);
 #elif SDL_VIDEO_DRIVER_WINDOWS
 #define VK_USE_PLATFORM_WIN32_KHR
 #else
+/* On Linux all these drivers could be present */
+#if SDL_VIDEO_DRIVER_MIR
+#define VK_USE_PLATFORM_MIR_KHR
+#endif
 #if SDL_VIDEO_DRIVER_WAYLAND
 #define VK_USE_PLATFORM_WAYLAND_KHR
 #endif
@@ -67,7 +66,6 @@ void UIKit_Mtl_GetDrawableSize(SDL_Window*, int* w, int* h);
 #include <X11/Xlib-xcb.h>
 #endif
 #endif
-#include <SDL_vulkan.h>
 #include <vulkan/vulkan.h>
 
 #include <SDL_syswm.h>
@@ -114,15 +112,15 @@ SDL_Vulkan_GetInstanceExtensions(unsigned length, const char** names)
         return SetNames(length, names, 1, ext);
     }
 #endif
-#if SDL_VIDEO_DRIVER_WAYLAND
-    if (!strcmp(driver, "wayland")) {
-        const char* ext[] = { VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME };
+#if SDL_VIDEO_DRIVER_MIR
+    if (!strcmp(driver, "mir")) {
+        const char* ext[] = { VK_KHR_MIR_SURFACE_EXTENSION_NAME };
         return SetNames(length, names, 1, ext);
     }
 #endif
-#if SDL_VIDEO_DRIVER_WINDOWS
-    if (!strcmp(driver, "windows")) {
-        const char* ext[] = { VK_KHR_WIN32_SURFACE_EXTENSION_NAME };
+#if SDL_VIDEO_DRIVER_WAYLAND
+    if (!strcmp(driver, "wayland")) {
+        const char* ext[] = { VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME };
         return SetNames(length, names, 1, ext);
     }
 #endif
@@ -132,18 +130,26 @@ SDL_Vulkan_GetInstanceExtensions(unsigned length, const char** names)
         return SetNames(length, names, 1, ext);
     }
 #endif
+#if SDL_VIDEO_DRIVER_WINDOWS
+    if (!strcmp(driver, "windows")) {
+        const char* ext[] = { VK_KHR_WIN32_SURFACE_EXTENSION_NAME };
+        return SetNames(length, names, 1, ext);
+    }
+#endif
 
     (void)SetNames;
     (void)names;
 
     SDL_SetError("Unsupported video driver '%s'", driver);
-    return SDL_FALSE;
+    return 0;
 }
 
 int
 SDL_Vulkan_CreateSurface(SDL_Window* window,
                          VkInstance instance, VkSurfaceKHR* surface)
 {
+    SDL_SysWMinfo wminfo;
+
     if (!window) {
         SDL_SetError("'window' is null");
         return -1;
@@ -153,7 +159,6 @@ SDL_Vulkan_CreateSurface(SDL_Window* window,
         return -1;
     }
 
-    SDL_SysWMinfo wminfo;
     SDL_VERSION(&wminfo.version);
     if (!SDL_GetWindowWMInfo(window, &wminfo))
         return -1;
@@ -237,16 +242,61 @@ SDL_Vulkan_CreateSurface(SDL_Window* window,
     case SDL_SYSWM_WINDOWS:
     {
         VkWin32SurfaceCreateInfoKHR createInfo;
+        VkResult r;
+
         createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
         createInfo.pNext = NULL;
         createInfo.flags = 0;
         createInfo.hinstance = wminfo.info.win.hdc; // XXX ???
         createInfo.hwnd = wminfo.info.win.window;
 
-        VkResult r =
-            vkCreateWin32SurfaceKHR(instance, &createInfo, NULL, surface);
+        r = vkCreateWin32SurfaceKHR(instance, &createInfo, NULL, surface);
         if (r != VK_SUCCESS) {
-            SDL_SetError("vkCreateAndroidSurfaceKHR failed: %i", (int)r);
+            SDL_SetError("vkCreateWin32SurfaceKHR failed: %i", (int)r);
+            return -1;
+        }
+        return 0;
+    }
+#endif
+#if SDL_VIDEO_DRIVER_MIR
+    case SDL_SYSWM_MIR:
+    {
+        /* X11 surfaces are not well supported in the Vulkan ecosystem.
+           Use XCB instead. */
+        VkMirSurfaceCreateInfoKHR createInfo;
+        VkResult r;
+
+        createInfo.sType = VK_STRUCTURE_TYPE_MIR_SURFACE_CREATE_INFO_KHR;
+        createInfo.pNext = NULL;
+        createInfo.flags = 0;
+        createInfo.connection = wminfo.info.mir.connection;
+        createInfo.mirSurface = wminfo.info.mir.surface;
+
+        r = vkCreateXcbSurfaceKHR(instance, &createInfo, NULL, surface);
+        if (r != VK_SUCCESS) {
+            SDL_SetError("vkCreateXcbSurfaceKHR failed: %i", (int)r);
+            return -1;
+        }
+        return 0;
+    }
+#endif
+#if SDL_VIDEO_DRIVER_WAYLAND
+    case SDL_SYSWM_WAYLAND:
+    {
+        /* X11 surfaces are not well supported in the Vulkan ecosystem.
+           Use XCB instead. */
+        VkWaylandSurfaceCreateInfoKHR createInfo;
+        VkResult r;
+
+        createInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
+        createInfo.pNext = NULL;
+        createInfo.flags = 0;
+        createInfo.display = wminfo.info.wl.display);
+        createInfo.surface = wminfo.info.wl.window;
+
+        r = vkCreateXcbSurfaceKHR(instance, &createInfo, NULL, surface);
+        if (r != VK_SUCCESS) {
+            SDL_SetError("vkCreateXcbSurfaceKHR failed: %i", (int)r);
             return -1;
         }
         return 0;
@@ -255,14 +305,18 @@ SDL_Vulkan_CreateSurface(SDL_Window* window,
 #if SDL_VIDEO_DRIVER_X11
     case SDL_SYSWM_X11:
     {
+        /* X11 surfaces are not well supported in the Vulkan ecosystem.
+           Use XCB instead. */
         VkXcbSurfaceCreateInfoKHR createInfo;
+        VkResult r;
+
         createInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
         createInfo.pNext = NULL;
         createInfo.flags = 0;
         createInfo.connection = XGetXCBConnection(wminfo.info.x11.display);
         createInfo.window = wminfo.info.x11.window;
 
-        VkResult r = vkCreateXcbSurfaceKHR(instance, &createInfo, NULL, surface);
+        r = vkCreateXcbSurfaceKHR(instance, &createInfo, NULL, surface);
         if (r != VK_SUCCESS) {
             SDL_SetError("vkCreateXcbSurfaceKHR failed: %i", (int)r);
             return -1;
@@ -289,3 +343,28 @@ SDL_Vulkan_GetDrawableSize(SDL_Window * window, int *w, int *h)
     SDL_GetWindowSize(window, w, h);
 #endif
 }
+
+#else /* !SDL_VIDEO_VULKAN */
+
+int
+SDL_Vulkan_GetInstanceExtensions(unsigned length, const char** names)
+{
+    SDL_SetError("Vulkan surface support not configured");
+    return 0;
+}
+
+int
+SDL_Vulkan_CreateSurface(SDL_Window* window,
+                         VkInstance instance, VkSurfaceKHR* surface)
+{
+    SDL_SetError("Vulkan surface support not configured");
+    return -1;
+}
+
+void
+SDL_Vulkan_GetDrawableSize(SDL_Window * window, int *w, int *h)
+{
+    SDL_GetWindowSize(window, w, h);
+}
+
+#endif /* SDL_VIDEO_VULKAN */

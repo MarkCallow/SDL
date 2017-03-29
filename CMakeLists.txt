@@ -310,6 +310,12 @@ set_option(VIDEO_COCOA         "Use Cocoa video driver" ${APPLE})
 set_option(DIRECTX             "Use DirectX for Windows audio/video" ${WINDOWS})
 set_option(RENDER_D3D          "Enable the Direct3D render driver" ${WINDOWS})
 set_option(VIDEO_VIVANTE       "Use Vivante EGL video driver" ${UNIX_SYS})
+if(ANDROID OR APPLE OR LINUX OR WINDOWS)
+  set(VIDEO_VULKAN_DEFAULT ON)
+else()
+  set(VIDEO_VULKAN_DEFAULT OFF)
+endif()
+set_option(VIDEO_VULKAN        "Enable Vulkan surface creation" ${VIDEO_VULKAN_DEFAULT})
 
 # TODO: We should (should we?) respect cmake's ${BUILD_SHARED_LIBS} flag here
 # The options below are for compatibility to configure's default behaviour.
@@ -749,6 +755,10 @@ if(SDL_VIDEO)
   endif()
 endif()
 
+if(VIDEO_VULKAN)
+  set(SDL_VIDEO_VULKAN 1)
+endif()
+
 if(ANDROID)
   file(GLOB ANDROID_CORE_SOURCES ${SDL2_SOURCE_DIR}/src/core/android/*.c)
   set(SOURCE_FILES ${SOURCE_FILES} ${ANDROID_CORE_SOURCES})
@@ -945,6 +955,13 @@ elseif(UNIX AND NOT APPLE)
     endif()
 
     check_include_file("fcitx/frontend.h" HAVE_FCITX_FRONTEND_H)
+
+    if(VIDEO_VULKAN)
+      if(VIDEO_X11)
+        list(APPEND EXTRA_LIBS "-lX11-xcb" "-lvulkan")
+      endif()
+      list(APPEND EXTRA_LIBS "-lvulkan")
+    endif()
 
   endif()
 
@@ -1324,6 +1341,12 @@ elseif(APPLE)
   endif()
 
   # Actually load the frameworks at the end so we don't duplicate include.
+  if (VIDEO_VULKAN)
+    find_library(MOLTENVK MoltenVK)
+    list(APPEND EXTRA_LIBS ${MOLTENVK})
+    find_library(COREANIMATION CoreAnimation)
+    list(APPEND EXTRA_LIBS ${COREANIMATION})
+  endif()
   if(SDL_FRAMEWORK_COREVIDEO)
     find_library(COREVIDEO CoreVideo)
     list(APPEND EXTRA_LIBS ${COREVIDEO})
