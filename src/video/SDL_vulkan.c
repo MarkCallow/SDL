@@ -261,8 +261,6 @@ SDL_Vulkan_CreateSurface(SDL_Window* window,
 #if SDL_VIDEO_DRIVER_MIR
     case SDL_SYSWM_MIR:
     {
-        /* X11 surfaces are not well supported in the Vulkan ecosystem.
-           Use XCB instead. */
         VkMirSurfaceCreateInfoKHR createInfo;
         VkResult r;
 
@@ -272,9 +270,9 @@ SDL_Vulkan_CreateSurface(SDL_Window* window,
         createInfo.connection = wminfo.info.mir.connection;
         createInfo.mirSurface = wminfo.info.mir.surface;
 
-        r = vkCreateXcbSurfaceKHR(instance, &createInfo, NULL, surface);
+        r = vkCreateMirSurfaceKHR(instance, &createInfo, NULL, surface);
         if (r != VK_SUCCESS) {
-            SDL_SetError("vkCreateXcbSurfaceKHR failed: %i", (int)r);
+            SDL_SetError("vkCreateMirSurfaceKHR failed: %i", (int)r);
             return -1;
         }
         return 0;
@@ -283,8 +281,6 @@ SDL_Vulkan_CreateSurface(SDL_Window* window,
 #if SDL_VIDEO_DRIVER_WAYLAND
     case SDL_SYSWM_WAYLAND:
     {
-        /* X11 surfaces are not well supported in the Vulkan ecosystem.
-           Use XCB instead. */
         VkWaylandSurfaceCreateInfoKHR createInfo;
         VkResult r;
 
@@ -294,9 +290,9 @@ SDL_Vulkan_CreateSurface(SDL_Window* window,
         createInfo.display = wminfo.info.wl.display);
         createInfo.surface = wminfo.info.wl.window;
 
-        r = vkCreateXcbSurfaceKHR(instance, &createInfo, NULL, surface);
+        r = vkCreateWaylandSurfaceKHR(instance, &createInfo, NULL, surface);
         if (r != VK_SUCCESS) {
-            SDL_SetError("vkCreateXcbSurfaceKHR failed: %i", (int)r);
+            SDL_SetError("vkCreateWaylandSurfaceKHR failed: %i", (int)r);
             return -1;
         }
         return 0;
@@ -305,7 +301,7 @@ SDL_Vulkan_CreateSurface(SDL_Window* window,
 #if SDL_VIDEO_DRIVER_X11
     case SDL_SYSWM_X11:
     {
-        /* X11 surfaces are not well supported in the Vulkan ecosystem.
+        /* Xlib surfaces are not well supported in the Vulkan ecosystem.
            Use XCB instead. */
         VkXcbSurfaceCreateInfoKHR createInfo;
         VkResult r;
