@@ -310,12 +310,7 @@ set_option(VIDEO_COCOA         "Use Cocoa video driver" ${APPLE})
 set_option(DIRECTX             "Use DirectX for Windows audio/video" ${WINDOWS})
 set_option(RENDER_D3D          "Enable the Direct3D render driver" ${WINDOWS})
 set_option(VIDEO_VIVANTE       "Use Vivante EGL video driver" ${UNIX_SYS})
-if(ANDROID OR APPLE OR LINUX OR WINDOWS)
-  set(VIDEO_VULKAN_DEFAULT ON)
-else()
-  set(VIDEO_VULKAN_DEFAULT OFF)
-endif()
-set_option(VIDEO_VULKAN        "Enable Vulkan surface creation" ${VIDEO_VULKAN_DEFAULT})
+dep_option(VIDEO_VULKAN        "Enable Vulkan surface creation" ON "ANDROID OR APPLE OR LINUX OR WINDOWS" OFF)
 
 # TODO: We should (should we?) respect cmake's ${BUILD_SHARED_LIBS} flag here
 # The options below are for compatibility to configure's default behaviour.
