@@ -29,8 +29,6 @@
  *
  */
 
-#include <string.h>
-
 #include "../SDL_internal.h"
 
 #include "SDL_config.h"
@@ -74,13 +72,15 @@ static int
 SetNames(unsigned int capacity, const char** names,
          unsigned inCount, const char* const* inNames)
 {
+	unsigned int i;
+
     if (names) {
         if (capacity < inCount) {
             SDL_SetError("Insufficient capacity for extension names: %u < %u",
                          capacity, inCount);
             return 0;
         }
-        for (unsigned i = 0; i < inCount; ++i)
+        for (i = 0; i < inCount; ++i)
             names[i] = inNames[i];
     }
     return inCount;
@@ -95,43 +95,43 @@ SDL_Vulkan_GetInstanceExtensions(unsigned length, const char** names)
         return 0;
     }
 #if SDL_VIDEO_DRIVER_ANDROID
-    if (!strcmp(driver, "android")) {
+    if (!SDL_strcmp(driver, "android")) {
         const char* ext[] = { VK_KHR_ANDROID_SURFACE_EXTENSION_NAME };
         return SetNames(length, names, 1, ext);
     }
 #endif
 #if SDL_VIDEO_DRIVER_COCOA
-    if (!strcmp(driver, "cocoa")) {
+    if (!SDL_strcmp(driver, "cocoa")) {
         const char* ext[] = { VK_MVK_MACOS_SURFACE_EXTENSION_NAME };
         return SetNames(length, names, 1, ext);
     }
 #endif
 #if SDL_VIDEO_DRIVER_UIKIT
-    if (!strcmp(driver, "uikit")) {
+    if (!SDL_strcmp(driver, "uikit")) {
         const char* ext[] = { VK_MVK_IOS_SURFACE_EXTENSION_NAME };
         return SetNames(length, names, 1, ext);
     }
 #endif
 #if SDL_VIDEO_DRIVER_MIR
-    if (!strcmp(driver, "mir")) {
+    if (!SDL_strcmp(driver, "mir")) {
         const char* ext[] = { VK_KHR_MIR_SURFACE_EXTENSION_NAME };
         return SetNames(length, names, 1, ext);
     }
 #endif
 #if SDL_VIDEO_DRIVER_WAYLAND
-    if (!strcmp(driver, "wayland")) {
+    if (!SDL_strcmp(driver, "wayland")) {
         const char* ext[] = { VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME };
         return SetNames(length, names, 1, ext);
     }
 #endif
 #if SDL_VIDEO_DRIVER_X11
-    if (!strcmp(driver, "x11")) {
+    if (!SDL_strcmp(driver, "x11")) {
         const char* ext[] = { VK_KHR_XCB_SURFACE_EXTENSION_NAME };
         return SetNames(length, names, 1, ext);
     }
 #endif
 #if SDL_VIDEO_DRIVER_WINDOWS
-    if (!strcmp(driver, "windows")) {
+    if (!SDL_strcmp(driver, "windows")) {
         const char* ext[] = { VK_KHR_WIN32_SURFACE_EXTENSION_NAME };
         return SetNames(length, names, 1, ext);
     }
@@ -247,7 +247,7 @@ SDL_Vulkan_CreateSurface(SDL_Window* window,
         createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
         createInfo.pNext = NULL;
         createInfo.flags = 0;
-        createInfo.hinstance = wminfo.info.win.hdc; // XXX ???
+        createInfo.hinstance = wminfo.info.win.hinstance;
         createInfo.hwnd = wminfo.info.win.window;
 
         r = vkCreateWin32SurfaceKHR(instance, &createInfo, NULL, surface);

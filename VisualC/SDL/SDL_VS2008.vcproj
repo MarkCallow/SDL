@@ -75,7 +75,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="winmm.lib imm32.lib version.lib"
+				AdditionalDependencies="vulkan-1.lib winmm.lib imm32.lib version.lib"
+				AdditionalLibraryDirectories="$(VULKAN_SDK)/Lib32"
 				IgnoreAllDefaultLibraries="true"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -156,7 +157,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="winmm.lib imm32.lib version.lib"
+				AdditionalDependencies="vulkan-1.lib winmm.lib imm32.lib version.lib"
+				AdditionalLibraryDirectories="$(VULKAN_SDK)/Lib"
 				IgnoreAllDefaultLibraries="true"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -238,7 +240,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="winmm.lib imm32.lib version.lib"
+				AdditionalDependencies="vulkan-1.lib winmm.lib imm32.lib version.lib"
+				AdditionalLibraryDirectories="$(VULKAN_SDK)/Lib32"
 				IgnoreAllDefaultLibraries="true"
 				GenerateDebugInformation="false"
 				SubSystem="2"
@@ -320,7 +323,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="winmm.lib imm32.lib version.lib"
+				AdditionalDependencies="vulkan-1.lib winmm.lib imm32.lib version.lib"
+				AdditionalLibraryDirectories="$(VULKAN_SDK)/Lib"
 				IgnoreAllDefaultLibraries="true"
 				GenerateDebugInformation="false"
 				SubSystem="2"
@@ -644,6 +648,10 @@
 				RelativePath="..\..\include\SDL_video.h"
 				>
 			</File>
+			<File
+				RelativePath="..\..\include\SDL_vulkan.h"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath="..\..\src\events\blank_cursor.h"
@@ -870,6 +878,14 @@
 			>
 		</File>
 		<File
+			RelativePath="..\..\src\SDL_dataqueue.c"
+			>
+		</File>
+		<File
+			RelativePath="..\..\src\SDL_dataqueue.h"
+			>
+		</File>
+		<File
 			RelativePath="..\..\src\haptic\windows\SDL_dinputhaptic.c"
 			>
 		</File>
@@ -959,14 +975,6 @@
 		</File>
 		<File
 			RelativePath="..\..\src\video\SDL_egl.c"
-			>
-		</File>
-		<File
-			RelativePath="..\..\src\SDL_dataqueue.c"
-			>
-		</File>
-		<File
-			RelativePath="..\..\src\SDL_dataqueue.h"
 			>
 		</File>
 		<File
@@ -1306,6 +1314,50 @@
 			>
 		</File>
 		<File
+			RelativePath="..\..\src\video\SDL_vulkan.c"
+			>
+			<FileConfiguration
+				Name="Debug|Win32"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					AdditionalIncludeDirectories="$(VULKAN_SDK)/include"
+				/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Debug|x64"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					AdditionalIncludeDirectories="$(VULKAN_SDK)/include"
+				/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Release|Win32"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					AdditionalIncludeDirectories="$(VULKAN_SDK)/include"
+				/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Release|x64"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					AdditionalIncludeDirectories="$(VULKAN_SDK)/include"
+				/>
+			</FileConfiguration>
+		</File>
+		<File
+			RelativePath="..\..\src\audio\wasapi\SDL_wasapi.c"
+			>
+		</File>
+		<File
+			RelativePath="..\..\src\audio\wasapi\SDL_wasapi.h"
+			>
+		</File>
+		<File
 			RelativePath="..\..\src\audio\SDL_wave.c"
 			>
 		</File>
@@ -1435,14 +1487,6 @@
 		</File>
 		<File
 			RelativePath="..\..\src\video\windows\SDL_windowswindow.h"
-			>
-		</File>
-		<File
-			RelativePath="..\..\src\audio\wasapi\SDL_wasapi.c"
-			>
-		</File>
-		<File
-			RelativePath="..\..\src\audio\wasapi\SDL_wasapi.h"
 			>
 		</File>
 		<File
