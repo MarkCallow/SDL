@@ -185,7 +185,7 @@ SDL_Vulkan_CreateSurface(SDL_Window* window,
 #if SDL_VIDEO_DRIVER_UIKIT
     case SDL_SYSWM_UIKIT:
     {
-#if !TARGET_OS_SIMULATOR
+#if !TARGET_OS_SIMULATOR && !TARGET_CPU_ARM // Only 64-bit devices have Metal
         VkIOSSurfaceCreateInfoMVK createInfo;
         createInfo.sType = VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK;
         createInfo.pNext = NULL;
@@ -205,7 +205,9 @@ SDL_Vulkan_CreateSurface(SDL_Window* window,
         }
         return -1;
 #else
-        SDL_SetError("Metal (& MoltenVK) not supported by the iOS simulator");
+        SDL_SetError("Metal (& MoltenVK) not supported %s",
+                     TARGET_OS_SIMULATOR ? "by the iOS simulator."
+                                         : "on 32-bit architectures.");
         return -1;
 #endif
     }
