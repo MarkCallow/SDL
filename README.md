@@ -10,7 +10,8 @@ Branch `upstream_master` reflects the most recent pull from that repo's
 http://hg.libsdl.org/SDL/rev/924f8bdc008d.
 
 See [below](pulling_from_mercurial) for instructions on pulling from
-the [SDL Mercurial repository](http://hg.libsdl.org/SDL)
+the [SDL Mercurial repository](http://hg.libsdl.org/SDL). Also see
+[below](building) for special build instructions for this fork.
 
 See the main SDL [README](docs/README.md) for more information about
 SDL.
@@ -89,6 +90,11 @@ Sample code
     // ...
 ```
 For a working example see [this fork](https://github.com/msc-/KTX) of the KTX project. The code is in the `vkloadtests` branch. If that branch no longer exists, look in `incoming` or `master`. See [`VulkanAppSDL.cpp`](https://github.com/msc-/KTX/blob/vkloadtests/tests/loadtests/appfwSDL/VulkanAppSDL/VulkanAppSDL.cpp) and [`VulkanSwapchain.cpp`](https://github.com/msc-/KTX/blob/vkloadtests/tests/loadtests/appfwSDL/VulkanAppSDL/VulkanSwapchain.cpp) in `tests/loadtests/appfwSDL/VulkanAppSDL/`. The links point to the vkloadtests branch.
+
+Building
+--------
+
+To build for iOS or macOS you must install [MoltenVK](https://moltengl.com/moltenvk/). If using the provided Xcode projects, you must set a `VULKAN_SDK` custom path in Xcode preferences whose value is the location where you have installed MoltenVK. Then follow the usual SDL build processes.
 
 Pulling from Mercurial
 ----------------------
