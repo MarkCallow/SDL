@@ -60,8 +60,7 @@ Sample code
         // Vulkan not supported in current platform
         exit();
     }
-    c++;
-    extensionNames = (const char**)malloc(sizeof(char*) * c);
+    extensionNames = (const char**)malloc(sizeof(char*) * (c + 1));
     extensionNames[0] = VK_KHR_SURFACE_EXTENSION_NAME;
     (void)SDL_Vulkan_GetInstanceExtensions(c, &extensionNames[1]);
 
@@ -81,7 +80,7 @@ Sample code
         // Handle error. SDL_GetError() will return an explanation.
     }
     
-    // findGraphicsQueue();
+    // findGraphicsQueueWithPresentCapability();
     // createDevice();
     // createSwapchain(physicalDevice, device, surface, width, height)
     
