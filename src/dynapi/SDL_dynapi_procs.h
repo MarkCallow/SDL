@@ -656,3 +656,6 @@ SDL_DYNAPI_PROC(SDL_JoystickType,SDL_JoystickGetType,(SDL_Joystick *a),(a),retur
 SDL_DYNAPI_PROC(void,SDL_MemoryBarrierReleaseFunction,(void),(),)
 SDL_DYNAPI_PROC(void,SDL_MemoryBarrierAcquireFunction,(void),(),)
 SDL_DYNAPI_PROC(SDL_JoystickID,SDL_JoystickGetDeviceInstanceID,(int a),(a),return)
+SDL_DYNAPI_PROC(int,SDL_Vulkan_GetInstanceExtensions,(unsigned int a, const char **b),(a,b),return)
+SDL_DYNAPI_PROC(int,SDL_Vulkan_CreateSurface,(SDL_Window *a, VkInstance b, VkSurfaceKHR *c),(a,b,c),return)
+SDL_DYNAPI_PROC(void,SDL_Vulkan_GetDrawableSize,(SDL_Window *a, int *b, int *c),(a,b,c),)

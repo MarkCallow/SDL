@@ -310,6 +310,10 @@ set_option(VIDEO_COCOA         "Use Cocoa video driver" ${APPLE})
 set_option(DIRECTX             "Use DirectX for Windows audio/video" ${WINDOWS})
 set_option(RENDER_D3D          "Enable the Direct3D render driver" ${WINDOWS})
 set_option(VIDEO_VIVANTE       "Use Vivante EGL video driver" ${UNIX_SYS})
+dep_option(VIDEO_VULKAN        "Enable Vulkan surface creation" ON "ANDROID OR APPLE OR LINUX OR WINDOWS" OFF)
+if(VIDEO_VULKAN)
+  set(VULKAN_SDK $ENV{VULKAN_SDK} CACHE PATH "Location of Vulkan library & headers")
+endif()
 
 # TODO: We should (should we?) respect cmake's ${BUILD_SHARED_LIBS} flag here
 # The options below are for compatibility to configure's default behaviour.
@@ -946,6 +950,18 @@ elseif(UNIX AND NOT APPLE)
 
     check_include_file("fcitx/frontend.h" HAVE_FCITX_FRONTEND_H)
 
+    if(VIDEO_VULKAN)
+      if(VIDEO_X11)
+        check_include_file("X11/Xlib-xcb.h" HAVE_XCB_H)
+        find_library(X11_XCB_LIB X11-xcb)
+        list(APPEND EXTRA_LIBS ${X11_XCB_LIB})
+      endif()
+      set(CMAKE_REQUIRED_INCLUDES "${VULKAN_SDK}/include")
+      check_include_file("vulkan/vulkan.h" HAVE_VULKAN_H)
+      find_library(VULKAN_LIB NAMES vulkan vulkan-1 PATHS "${VULKAN_SDK}/lib")
+      list(APPEND EXTRA_LIBS ${VULKAN_LIB})
+    endif()
+
   endif()
 
   if(INPUT_TSLIB)
@@ -1193,6 +1209,12 @@ elseif(WINDOWS)
       set(SDL_VIDEO_RENDER_OGL_ES2 1)
       set(HAVE_VIDEO_OPENGLES TRUE)
     endif()
+
+    if(VIDEO_VULKAN)
+      set(CMAKE_REQUIRED_INCLUDES "${VULKAN_SDK}/include")
+      check_include_file("vulkan/vulkan.h" HAVE_VULKAN_H)
+      find_library(VULKAN_LIB vulkan-1 ${VULKAN_SDK}/lib)
+    endif()
   endif()
 
   if(SDL_JOYSTICK)
@@ -1324,6 +1346,18 @@ elseif(APPLE)
   endif()
 
   # Actually load the frameworks at the end so we don't duplicate include.
+  if (VIDEO_VULKAN)
+    set(CMAKE_REQUIRED_INCLUDES "${VULKAN_SDK}/include")
+    check_include_file("vulkan/vulkan.h" HAVE_VULKAN_H)
+    if(MACOSX)
+      find_library(VULKAN_LIB MoltenVK ${VULKAN_SDK}/macOS)
+    else()
+      find_library(VULKAN_LIB MoltenVK ${VULKAN_SDK}/iOS)
+    endif()
+    list(APPEND EXTRA_LIBS ${VULKAN_LIB})
+    find_library(COREANIMATION CoreAnimation)
+    list(APPEND EXTRA_LIBS ${COREANIMATION})
+  endif()
   if(SDL_FRAMEWORK_COREVIDEO)
     find_library(COREVIDEO CoreVideo)
     list(APPEND EXTRA_LIBS ${COREVIDEO})
@@ -1401,6 +1435,12 @@ elseif(HAIKU)
   endif()
 
   CheckPTHREAD()
+endif()
+
+if(VIDEO_VULKAN AND VULKAN_LIB AND HAVE_VULKAN_H)
+  if(NOT LINUX OR NOT VIDEO_X11 OR (X11_XCB_LIB AND HAVE_XCB_H))
+    set(SDL_VIDEO_VULKAN 1)
+  endif()
 endif()
 
 # Dummies
