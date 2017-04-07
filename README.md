@@ -9,9 +9,9 @@ Branch `upstream_master` reflects the most recent pull from that repo's
 `master` branch. The tip at the time was
 http://hg.libsdl.org/SDL/rev/924f8bdc008d.
 
-See [below](pulling_from_mercurial) for instructions on pulling from
+See [below](#pulling_from_mercurial) for instructions on pulling from
 the [SDL Mercurial repository](http://hg.libsdl.org/SDL). Also see
-[below](building) for special build instructions for this fork.
+[below](#building) for special build instructions for this fork.
 
 See the main SDL [README](docs/README.md) for more information about
 SDL.
