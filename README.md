@@ -18,9 +18,11 @@ SDL.
 What is Different Here
 ----------------------
 
-This fork contains 1 main change from SDL 2.0.5+:
+This fork contains 2 changes from SDL 2.0.5+:
 
-1. A script to create pre-built SDL libraries for Android, as described in
+1. Support for creating Vulkan surfaces on SDL_Windows. A patch has been filed in  [SDL Bugzilla](https://bugzilla.libsdl.org/) issue [3591](https://bugzilla.libsdl.org/show_bug.cgi?id=3591)
+
+2. A script to create pre-built SDL libraries for Android, as described in
    [SDL Bugzilla](https://bugzilla.libsdl.org/) issue [2839](https://bugzilla.libsdl.org/show_bug.cgi?id=2839)
 
 These fixes are needed by the
@@ -31,6 +33,63 @@ Fixes for [SDL Bugzilla](https://bugzilla.libsdl.org/) issues
 [2570](https://bugzilla.libsdl.org/show_bug.cgi?id=2570) and
 [3145](https://bugzilla.libsdl.org/show_bug.cgi?id=3145), which first
 appeared in this fork, have now been merged upstream and, as a result, are still included here.
+
+Creating Vulkan Surfaces
+------------------------
+
+Sample code
+
+```C
+    SDL_window* window;
+    const char** extensionNames;
+    VkInstanceCreateInfo instanceInfo = {};
+    VkInstance instance;
+    VkSurfaceKHR surface;
+    VkResult err;
+    
+    // Create the window as you would any non-GL SDL_window.
+    // No special flags are needed.
+    window = SDL_CreateWindow(...);
+    
+    // Note: use SDL_Vulkan_GetDrawableSize(...) for setting viewports,
+    // scissor & etc.
+   
+    /* Build list of needed surface instance extensions */
+    uint32_t c = SDL_Vulkan_GetInstanceExtensions(0, NULL);
+    if (c == 0) {
+        // Vulkan not supported in current platform
+        exit();
+    }
+    c++;
+    extensionNames = (const char**)malloc(sizeof(char*) * c);
+    extensionNames[0] = VK_KHR_SURFACE_EXTENSION_NAME;
+    (void)SDL_Vulkan_GetInstanceExtensions(c, &extensionNames[1]);
+
+    instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    instanceInfo.enabledExtensionCount = c;
+    instanceInfo.ppEnabledExtensionNames = extensionNames;
+    // Set up rest of instanceInfo
+    
+    err = VkCreateInstance(&instanceInfo, NULL, &instance);
+    if (err != VK_SUCCESS)
+        exit();
+
+    // findPhysicalDevice();
+    //
+    
+    if (SDL_Vulkan_CreateSurface(window, instance, &surface) < 0) {
+        // Handle error. SDL_GetError() will return an explanation.
+    }
+    
+    // findGraphicsQueue();
+    // createDevice();
+    // createSwapchain(physicalDevice, device, surface, width, height)
+    
+    // Continue application initialization.
+    // ...
+    // ...
+```
+For a working example see [this fork](https://github.com/msc-/KTX) of the KTX project. The code is in the `vkloadtests` branch. If that branch no longer exists, look in `incoming` or `master`. See [`VulkanAppSDL.cpp`](https://github.com/msc-/KTX/blob/vkloadtests/tests/loadtests/appfwSDL/VulkanAppSDL/VulkanAppSDL.cpp) and [`VulkanSwapchain.cpp`](https://github.com/msc-/KTX/blob/vkloadtests/tests/loadtests/appfwSDL/VulkanAppSDL/VulkanSwapchain.cpp) in `tests/loadtests/appfwSDL/VulkanAppSDL/`. The links point to the vkloadtests branch.
 
 Pulling from Mercurial
 ----------------------
