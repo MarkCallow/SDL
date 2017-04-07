@@ -289,7 +289,7 @@ SDL_Vulkan_CreateSurface(SDL_Window* window,
         createInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
         createInfo.pNext = NULL;
         createInfo.flags = 0;
-        createInfo.display = wminfo.info.wl.display);
+        createInfo.display = wminfo.info.wl.display;
         createInfo.surface = wminfo.info.wl.window;
 
         r = vkCreateWaylandSurfaceKHR(instance, &createInfo, NULL, surface);
